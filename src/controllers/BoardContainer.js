@@ -7,14 +7,19 @@ import PropTypes from 'prop-types'
 import pick from 'lodash/pick'
 import isEqual from 'lodash/isEqual'
 import Lane from './Lane'
-import { PopoverWrapper } from 'react-popopo'
+import {PopoverWrapper} from 'react-popopo'
 
 import * as boardActions from 'rt/actions/BoardActions'
 import * as laneActions from 'rt/actions/LaneActions'
 
 class BoardContainer extends Component {
   state = {
-    addLaneMode: false
+    addLaneMode: false,
+    isDragging: false,
+    startX: 0,
+    startY: 0,
+    scrollLeft: 0,
+    scrollTop: 0
   }
 
   componentDidMount() {
@@ -23,6 +28,61 @@ class BoardContainer extends Component {
     if (eventBusHandle) {
       this.wireEventBus()
     }
+
+    const boardElement = document.querySelector('.react-trello-board')
+    if (boardElement) {
+      boardElement.addEventListener('mousedown', this.handleMouseDown)
+      boardElement.addEventListener('mousemove', this.handleMouseMove)
+      boardElement.addEventListener('mouseup', this.handleMouseUp)
+      boardElement.addEventListener('mouseleave', this.handleMouseLeave)
+    }
+  }
+
+  componentWillUnmount() {
+    const boardElement = document.querySelector('.react-trello-board')
+    if (boardElement) {
+      boardElement.removeEventListener('mousedown', this.handleMouseDown)
+      boardElement.removeEventListener('mousemove', this.handleMouseMove)
+      boardElement.removeEventListener('mouseup', this.handleMouseUp)
+      boardElement.removeEventListener('mouseleave', this.handleMouseLeave)
+    }
+  }
+
+  handleMouseDown = e => {
+    if (e.target.closest('.react-trello-card')) return
+
+    this.setState({
+      isDragging: true,
+      startX: e.pageX - e.currentTarget.offsetLeft,
+      startY: e.pageY - e.currentTarget.offsetTop,
+      scrollLeft: e.currentTarget.scrollLeft,
+      scrollTop: e.currentTarget.scrollTop
+    })
+  }
+
+  handleMouseMove = e => {
+    const {isDragging, startX, startY, scrollLeft, scrollTop} = this.state
+    if (!isDragging) return
+
+    const boardElement = document.querySelector('.react-trello-board')
+
+    e.preventDefault()
+
+    const x = e.pageX - boardElement.offsetLeft
+    const y = e.pageY - boardElement.offsetTop
+    const walkX = (x - startX) * 1.5
+    const walkY = (y - startY) * 1.5
+
+    boardElement.scrollLeft = scrollLeft - walkX
+    boardElement.scrollTop = scrollTop - walkY
+  }
+
+  handleMouseUp = () => {
+    this.setState({isDragging: false})
+  }
+
+  handleMouseLeave = () => {
+    this.setState({isDragging: false})
   }
 
   UNSAFE_componentWillReceiveProps(nextProps) {
@@ -204,8 +264,10 @@ class BoardContainer extends Component {
         </PopoverWrapper>
         {canAddLanes && (
           <Container orientation="horizontal">
-            {editable && !addLaneMode ? <components.NewLaneSection t={t} onClick={this.showEditableLane} /> : (
-              addLaneMode && <components.NewLaneForm onCancel={this.hideEditableLane} onAdd={this.addNewLane} t={t}/>
+            {editable && !addLaneMode ? (
+              <components.NewLaneSection t={t} onClick={this.showEditableLane} />
+            ) : (
+              addLaneMode && <components.NewLaneForm onCancel={this.hideEditableLane} onAdd={this.addNewLane} t={t} />
             )}
           </Container>
         )}
@@ -250,11 +312,11 @@ BoardContainer.propTypes = {
   laneDragClass: PropTypes.string,
   laneDropClass: PropTypes.string,
   onCardMoveAcrossLanes: PropTypes.func.isRequired,
-  t: PropTypes.func.isRequired,
+  t: PropTypes.func.isRequired
 }
 
 BoardContainer.defaultProps = {
-  t: v=>v,
+  t: v => v,
   onDataChange: () => {},
   handleDragStart: () => {},
   handleDragEnd: () => {},
