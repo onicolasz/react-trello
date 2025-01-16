@@ -31,6 +31,12 @@ class BoardContainer extends Component {
 
     const boardElement = document.querySelector('.react-trello-board')
     if (boardElement) {
+      // Add user-select: none to prevent text selection
+      boardElement.style.userSelect = 'none'
+      boardElement.style.WebkitUserSelect = 'none'
+      boardElement.style.MozUserSelect = 'none'
+      boardElement.style.msUserSelect = 'none'
+
       boardElement.addEventListener('mousedown', this.handleMouseDown)
       boardElement.addEventListener('mousemove', this.handleMouseMove)
       boardElement.addEventListener('mouseup', this.handleMouseUp)
@@ -49,7 +55,16 @@ class BoardContainer extends Component {
   }
 
   handleMouseDown = e => {
-    if (e.target.closest('.react-trello-card')) return
+    // Prevent dragging when interacting with lanes or cards
+    if (
+      e.target.closest('.react-trello-card') ||
+      e.target.closest('.react-trello-lane') ||
+      e.target.closest('.draggable')
+    )
+      return
+
+    // Prevent text selection
+    e.preventDefault()
 
     this.setState({
       isDragging: true,
@@ -61,7 +76,7 @@ class BoardContainer extends Component {
   }
 
   handleMouseMove = e => {
-    const {isDragging, startX, startY, scrollLeft, scrollTop} = this.state
+    const {isDragging, startX, scrollLeft} = this.state
     if (!isDragging) return
 
     const boardElement = document.querySelector('.react-trello-board')
@@ -69,12 +84,10 @@ class BoardContainer extends Component {
     e.preventDefault()
 
     const x = e.pageX - boardElement.offsetLeft
-    const y = e.pageY - boardElement.offsetTop
     const walkX = (x - startX) * 1.5
-    const walkY = (y - startY) * 1.5
 
+    // Only allow horizontal scrolling
     boardElement.scrollLeft = scrollLeft - walkX
-    boardElement.scrollTop = scrollTop - walkY
   }
 
   handleMouseUp = () => {
