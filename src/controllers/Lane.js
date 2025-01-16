@@ -260,12 +260,6 @@ class Lane extends Component {
       ...otherProps
     } = this.props
 
-    const laneStyle = {
-      ...otherProps.style,
-      overflowY: 'auto',
-      maxHeight: '100vh'
-    }
-
     const allClassNames = classNames('react-trello-lane', this.props.className || '')
     const showFooter = collapsibleLanes && cards.length > 0
     return (
@@ -274,9 +268,7 @@ class Lane extends Component {
         key={id}
         onClick={() => onLaneClick && onLaneClick(id)}
         draggable={false}
-        className={allClassNames}
-        style
-        style={laneStyle}>
+        className={allClassNames}>
         {this.renderHeader({id, cards, ...otherProps})}
         {this.renderDragContainer(isDraggingOver)}
         {loading && <components.Loader />}
